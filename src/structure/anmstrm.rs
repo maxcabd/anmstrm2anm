@@ -1,8 +1,7 @@
 use binrw::binrw;
 
-use crate::utils::util::*;
 use crate::structure::anm::{CoordParent, AnmCoord};
-
+use crate::structure::anm_utils::*;
 
 #[binrw]
 #[derive(Debug)]
@@ -13,13 +12,14 @@ pub struct NuccAnmStrm {
     pub is_looped: u16,
     pub clump_count: u16,
     pub other_entry_count: u16,
-    pub coord_count: u32,
+    pub other_index_count: u16,
+    pub coord_count: u16,
 
     #[br(count = clump_count)]
     pub clumps: Vec<AnmStrmClump>,
 
-    #[br(count = other_entry_count)]
-    pub other_entries_indices: Vec<u32>,
+    #[br(count = other_entry_count + other_index_count)]
+    pub other_entries_indices: Vec<u32>, 
 
     #[br(count = coord_count)]
     pub coord_parents: Vec<CoordParent>,
@@ -29,7 +29,7 @@ pub struct NuccAnmStrm {
 }
 
 #[binrw]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AnmStrmClump {
     pub clump_index: u32,
     pub bone_material_count: u16,
@@ -54,7 +54,7 @@ pub struct AnmStrmFrameInfo {
 
 
 #[binrw]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NuccAnmStrmFrame {
     pub frame_number: u32,
     pub entry_count: u16,
@@ -97,6 +97,9 @@ pub enum Entry {
     #[br(pre_assert(entry_format == 8))]
     Ambient(AnmEntryAmbient),
 
+    #[br(pre_assert(entry_format == 12))]
+    MorphModel(AnmEntryMorphModel),
+
 
     #[br(pre_assert(false))]
     Unknown
@@ -107,7 +110,7 @@ pub enum Entry {
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryBone {
-    pub curve_type: i32,
+    pub frame_count: i32,
     pub location: Vector3,
     pub rotation: Vector4,
     pub scale: Vector3,
@@ -117,7 +120,7 @@ pub struct AnmEntryBone {
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryCamera {
-    pub curve_type: i32,
+    pub frame_count: i32,
     pub location: Vector3,
     pub rotation: Vector4,
     pub fov: f32,
@@ -127,14 +130,14 @@ pub struct AnmEntryCamera {
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryMaterial {
-    pub curve_type: i32,
+    pub frame_count: i32,
     pub ambient_color: [f32; 16]
 }
 
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryLightDirc {
-    pub curve_type: i32,
+    pub frame_count: i32,
     pub color: Vector3,
     pub intensity: f32,
     pub direction: Vector4,
@@ -143,7 +146,7 @@ pub struct AnmEntryLightDirc {
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryLightPoint {
-    pub curve_type: i32,
+    pub frame_count: i32,
     pub color: Vector3,
     pub position: Vector3,
     pub intensity: f32,
@@ -154,6 +157,15 @@ pub struct AnmEntryLightPoint {
 #[binrw]
 #[derive(Debug, Clone)]
 pub struct AnmEntryAmbient {
-    pub curve_type: i32,
-    pub color: Vector4
+    pub frame_count: i32,
+    pub color: Vector3,
+    pub intensity: f32
+}
+
+#[binrw]
+#[derive(Debug, Clone)]
+pub struct AnmEntryMorphModel {
+    pub frame_count: i32,
+    #[br(count = frame_count)]
+    pub morph_weight: Vec<f32>,
 }

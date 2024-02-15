@@ -1,7 +1,9 @@
 use std::io::{Read, Seek};
 use binrw::{binrw, BinRead, BinResult, ReadOptions};
 
-use crate::utils::util::*;
+use crate::structure::anm_utils::*;
+
+
 
 #[binrw]
 #[derive(Debug, Clone)]
@@ -12,13 +14,14 @@ pub struct NuccAnm {
     pub looped: u16,
     pub clump_count: u16,
     pub other_entry_count: u16,
-    pub coord_count: u32,
+    pub other_index_count: u16,
+    pub coord_count: u16,
 
     #[br(count = clump_count)]
     pub clumps: Vec<AnmClump>,
 
-    #[br(count = other_entry_count)]
-    pub other_entries: Vec<u32>,
+    #[br(count = other_entry_count + other_index_count)]
+    pub other_entries_indices: Vec<u32>,
 
 
     #[br(count = coord_count)]
@@ -71,6 +74,7 @@ pub enum AnmEntryFormat {
     LIGHTDIRC = 5,
     LIGHTPOINT = 6,
     AMBIENT = 8,
+    MORPHMODEL = 12
 
 }
 

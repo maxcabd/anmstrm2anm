@@ -1,5 +1,6 @@
+use std::fs;
 use serde::{Deserialize, Serialize};
-
+use regex::Regex;
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -34,8 +35,6 @@ pub struct Files {
     pub chunk: Chunk,
 }
 
-
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Page {
     #[serde(rename = "Chunk Maps")]
@@ -47,15 +46,40 @@ pub struct Page {
 }
 
 impl Page {
-    pub fn from_json_file(file_path: &str) -> Page {
-        let json_str = std::fs::read_to_string(file_path).unwrap();
-        serde_json::from_str(&json_str).unwrap()
-      
+    pub fn from_json_file(filepath: &str) -> Page {
+        let json_result = fs::read(filepath);
+    
+        let json = match json_result {
+            Ok(data) => String::from_utf8_lossy(&data).to_string(),
+            Err(e) => {
+                eprintln!("Failed to read JSON file: {}", e);
+
+                String::new()
+
+            }
+        };
+    
+        let modified_json = replace_commas_in_strings(&json);
+
+        serde_json::from_str(&modified_json).expect("Failed to deserialize JSON")
+    }
+    
+    pub fn to_json_file(&self, filepath: &str) {
+        fs::File::create(filepath).unwrap();
+
+        let json = serde_json::to_string_pretty(&self).unwrap();
+        
+        fs::write(filepath, json).unwrap();        
     }
 
-    pub fn to_json_file(&self, file_path: &str) {
-        let json_str = serde_json::to_string_pretty(&self).unwrap();
-        std::fs::write(file_path, json_str).unwrap();
-    }
+}
+fn replace_commas_in_strings(json: &str) -> String {
+    let re = Regex::new(r#""[^"]*""#).expect("Failed to create regex");
 
+    let modified_json = re.replace_all(json, |caps: &regex::Captures| {
+        caps[0].replace(",", "")
+
+    });
+    // Then replace the weird character with a space
+    modified_json.replace("�", " ").to_string()
 }
